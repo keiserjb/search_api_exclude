@@ -7,8 +7,8 @@
 /**
  * Implements hook_schema().
  */
-function search_api_node_exclude_schema() {
-  $schema['search_api_node_exclude'] = array(
+function search_api_exclude_schema() {
+  $schema['search_api_exclude'] = array(
     'fields' => array(
       'nid' => array(
         'type' => 'int',
