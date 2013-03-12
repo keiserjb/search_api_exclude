@@ -26,7 +26,7 @@ function search_api_exclude_permission() {
   return array(
     'administer search api exclude' => array(
       'title' => t('administer search api exclude'),
-      'description' => t('Administer Search api exclude'),
+      'description' => t('Administer Search API exclude'),
     ),
   );
 }
@@ -65,7 +65,7 @@ function search_api_exclude_form_alter(&$form, $form_state, $form_id) {
 function search_api_exclude_form_node_type_form_alter(&$form, $form_state) {
   $form['search_api_exclude'] = array(
     '#type' => 'fieldset',
-    '#title' => t('Search api node exclude'),
+    '#title' => t('Search API exclude'),
     '#collapsible' => TRUE,
     '#collapsed' => TRUE,
     '#group' => 'additional_settings',
