@@ -12,7 +12,6 @@ function search_api_exclude_search_api_query_alter($query) {
   foreach ($result as $record) {
     $exclude_nids[] = $record->nid;
   }
-  dpm($exclude_nids);
   $filter = $query->createFilter('AND');
   foreach ($exclude_nids as $nid) {
     $filter->condition('nid', $nid, '<>');
@@ -52,7 +51,7 @@ function search_api_exclude_form_alter(&$form, $form_state, $form_id) {
       $form['search_api_exclude']['search_api_exclude'] = array(
         '#type' => 'checkbox',
         '#title' => t('Exclude from Search API'),
-        '#description' => t('If enabled a "noindex"-header will be set on this node. This should mean that this node will not be indexed and not occur in search engine results'),
+        '#description' => t('If enabled this node will not be removed from the Search API index.'),
         '#default_value' => isset($node->search_api_exclude) ? $node->search_api_exclude : 0,
         '#weight' => 5,
       );
@@ -90,7 +89,6 @@ function _search_api_exclude_node_delete_exclude($node) {
   ->condition('nid', $node->nid)
   ->execute();
 }
-
 
 /**
  * Sets the noindex option to true on the node.
@@ -133,5 +131,25 @@ function search_api_exclude_node_load($nodes, $types) {
   $result = db_query('SELECT nid, node_exclude  FROM {search_api_exclude} WHERE nid IN(:nids)', array(':nids' => array_keys($nodes)));
   foreach ($result as $record) {
     $nodes[$record->nid]->search_api_exclude = $record->node_exclude;
+  }
+}
+
+/**
+ * Implements hook_ctools_plugin_directory().
+ *
+ * @param string $owner
+ *   The system name of the module owning the plugin type for which a base
+ *   directory location is being requested.
+ * @param string $plugin_type
+ *   The name of the plugin type for which a base directory is being requested.
+ *
+ * @return string
+ *   The path where CTools' plugin system should search for plugin files,
+ *   relative to your module's root. Omit leading and trailing slashes.
+ *
+ */
+function search_api_exclude_ctools_plugin_directory($owner, $plugin_type) {
+  if ($owner == 'ctools' && $plugin_type == 'content_types') {
+    return 'plugins/content_types';
   }
 }
