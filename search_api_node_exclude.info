@@ -1,0 +1,3 @@
+name = Serach api node exclude
+description = Allows users exclude nodes to be indexed
+core = 7.x

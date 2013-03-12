@@ -1,0 +1,19 @@
+<?php
+/**
+ * @file
+ * Common function for the module, just extending serach_api
+ */
+
+/**
+ * Implements hook_search_api_query_alter().
+ */
+function search_api_node_exclude_search_api_query_alter($query) {
+  
+  $exclude_nids = array(214,340564);
+  
+  $filter = $query->createFilter('AND');
+  foreach ($exclude_nids as $nid) {
+    $filter->condition('nid', $nid, '<>');
+  }
+  $query->filter($filter);
+}
