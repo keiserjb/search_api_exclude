@@ -13,16 +13,14 @@ function search_api_node_exclude_schema() {
       'nid' => array(
         'type' => 'int',
         'not null' => TRUE,
-        'disp-width' => '11',
       ),
       'node_exclude' => array(
         'type' => 'int',
         'not null' => FALSE,
-        'disp-width' => '1',
       ),
     ),
     'indexes' => array(
-      'noindex' => array('noindex'),
+      'node_exclude' => array('node_exclude'),
     ),
     'primary key' => array('nid'),
   );
