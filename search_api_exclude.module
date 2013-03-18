@@ -12,11 +12,13 @@ function search_api_exclude_search_api_query_alter($query) {
   foreach ($result as $record) {
     $exclude_nids[] = $record->nid;
   }
+  if (isset($record->nid)) {
   $filter = $query->createFilter('AND');
   foreach ($exclude_nids as $nid) {
     $filter->condition('nid', $nid, '<>');
   }
-  $query->filter($filter);
+  $query->filter($filter);    
+  }
 }
 
 /**
