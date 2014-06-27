@@ -1,160 +1,198 @@
 <?php
-/**
- * @file
- * Common function for the module, just extending serach_api
- */
 
 /**
- * Implements hook_search_api_query_alter().
+ * @file
+ * Allows users to exclude specific nodes from indexing by Search API.
  */
-function search_api_exclude_search_api_query_alter($query) {
-  $index = $query->getIndex();
-  if($index->item_type == 'node') {
-    $result = db_query('SELECT nid FROM {search_api_exclude}');
-    foreach ($result as $record) {
-      $exclude_nids[] = $record->nid;
-    }
-    if (isset($record->nid)) {
-      $filter = $query->createFilter('AND');
-      foreach ($exclude_nids as $nid) {
-        $filter->condition('nid', $nid, '<>');
-      }
-      $query->filter($filter);
-    }
-  }
-}
 
 /**
  * Implements hook_permission().
  */
 function search_api_exclude_permission() {
   return array(
-    'administer search api exclude' => array(
-      'title' => t('administer search api exclude'),
-      'description' => t('Administer Search API exclude'),
+    'administer search_api_exclude' => array(
+      'title' => t('administer search_api_exclude'),
+      'description' => t('administer search_api_exclude'),
     ),
   );
 }
 
 /**
- * Implements hook_form_alter().
- * @todo this functions sucks.
+ * Implements hook_search_api_index_items_alter().
  */
-function search_api_exclude_form_alter(&$form, $form_state, $form_id) {
-  if (!empty($form['#node_edit_form'])) {
-    if (user_access('administer search api exclude') && variable_get('search_api_exclude_setting_' . $form['type']['#value'], 0)) {
-      $node = $form['#node'];
-      $form['search_api_exclude'] = array(
-        '#type' => 'fieldset',
-        '#title' => t('Search API settings'),
-        '#collapsible' => TRUE,
-        '#collapsed' => TRUE,
-        '#access' => user_access('administer search api exclude'),
-        '#weight' => 20,
-        '#group' => 'additional_settings',
-      );
-      $form['search_api_exclude']['search_api_exclude'] = array(
-        '#type' => 'checkbox',
-        '#title' => t('Exclude from Search API'),
-        '#description' => t('If enabled this node will not be removed from the Search API index.'),
-        '#default_value' => isset($node->search_api_exclude) ? $node->search_api_exclude : 0,
-        '#weight' => 5,
-      );
+function search_api_exclude_search_api_index_items_alter(array &$items, SearchApiIndex $index) {
+  if ($index->getEntityType() === 'node') {
+    $nids_to_ids = array();
+    // Item IDs might not be identical with node NIDs, and there might be
+    // multiple search items (with different item IDs) mapped to the same node.
+    // (E.g., with the Search API Entity Translation module.)
+    foreach ($items as $item_id => $node) {
+      if (isset($node->nid)) {
+        $nids_to_ids[$node->nid][] = $item_id;
+      }
+    }
+    foreach (search_api_exclude_get_excluded(array_keys($nids_to_ids)) as $nid) {
+      foreach ($nids_to_ids[$nid] as $item_id) {
+        unset($items[$item_id]);
+      }
     }
   }
-}
-
-/**
- * Implements hook_form_FORM_ID_alter().
- */
-function search_api_exclude_form_node_type_form_alter(&$form, $form_state) {
-  $form['search_api_exclude'] = array(
-    '#type' => 'fieldset',
-    '#title' => t('Search API exclude'),
-    '#collapsible' => TRUE,
-    '#collapsed' => TRUE,
-    '#group' => 'additional_settings',
-  );
-  $form['search_api_exclude']['search_api_exclude_setting'] = array(
-    '#type' => 'checkbox',
-    '#title' => t('Could be excluded from search api search.'),
-    '#default_value' => variable_get('search_api_exclude_setting_' . $form['#node_type']->type, 0),
-    '#description' => t('Could this node type be excluded in Search api?'),
-  );
-}
-
-/**
- * Removes the noindex option from the node.
- *
- * @param
- *  object $node
- */
-function _search_api_exclude_node_delete_exclude($node) {
-  db_delete('search_api_exclude')
-  ->condition('nid', $node->nid)
-  ->execute();
-}
-
-/**
- * Sets the noindex option to true on the node.
- *
- * @param
- *  object $node
- */
-function _search_api_exclude_node_set_exclude($node) {
-  _search_api_exclude_node_delete_exclude($node);
-  if (isset($node->search_api_exclude) && $node->search_api_exclude) {
-    $fields = array('nid' => $node->nid, 'node_exclude' => $node->search_api_exclude);
-    db_insert('search_api_exclude')->fields($fields)->execute();
-  }
-}
-/**
- * Implements hook_node_insert().
- */
-function search_api_exclude_node_insert($node) {
-  _search_api_exclude_node_set_exclude($node);
-}
-
-/**
- * Implements hook_node_update().
- */
-function search_api_exclude_node_update($node) {
-  _search_api_exclude_node_set_exclude($node);
 }
 
 /**
  * Implements hook_node_delete().
  */
 function search_api_exclude_node_delete($node) {
-  _search_api_exclude_node_delete_exclude($node);
+  search_api_exclude_remove_node($node->nid);
 }
 
 /**
- * Implements hook_node_load().
+ * Implements hook_form_BASE_FORM_ID_alter() for node_form().
  */
-function search_api_exclude_node_load($nodes, $types) {
-  $result = db_query('SELECT nid, node_exclude  FROM {search_api_exclude} WHERE nid IN(:nids)', array(':nids' => array_keys($nodes)));
-  foreach ($result as $record) {
-    $nodes[$record->nid]->search_api_exclude = $record->node_exclude;
+function search_api_exclude_form_node_form_alter(array &$form, array &$form_state, $form_id) {
+  $types = variable_get('search_api_exclude_types', array());
+  if (user_access('administer search_api_exclude') && !empty($types[$form['type']['#value']])) {
+    $node = $form['#node'];
+    $form['search_api_exclude'] = array(
+      '#type' => 'fieldset',
+      '#title' => t('Search API settings'),
+      '#collapsible' => TRUE,
+      '#collapsed' => TRUE,
+      '#weight' => 20,
+      '#group' => 'additional_settings',
+    );
+    $form['search_api_exclude']['search_api_exclude'] = array(
+      '#type' => 'checkbox',
+      '#title' => t('Exclude from Search API'),
+      '#description' => t('If enabled, this node will not be indexed in the Search API.'),
+      '#default_value' => !empty($node->nid) ? (bool) search_api_exclude_get_excluded(array($node->nid)) : FALSE,
+      '#weight' => 5,
+    );
+    $form['#submit'][] = 'search_api_exclude_form_node_form_submit';
+  }
+}
+
+/**
+ * Custom additional submit handler for node_form().
+ */
+function search_api_exclude_form_node_form_submit(array $form, array &$form_state) {
+  if (isset($form_state['values']['search_api_exclude']) && !empty($form['#node']->nid)) {
+    if ($form_state['values']['search_api_exclude']) {
+      search_api_exclude_add_node($form['#node']->nid);
+    }
+    else {
+      search_api_exclude_remove_node($form['#node']->nid);
+    }
+  }
+}
+
+/**
+ * Implements hook_form_FORM_ID_alter() for node_type_form().
+ */
+function search_api_exclude_form_node_type_form_alter(array &$form, array &$form_state) {
+  if (user_access('administer search_api_exclude')) {
+    $types = variable_get('search_api_exclude_types', array());
+    $form['search_api_exclude'] = array(
+      '#type' => 'fieldset',
+      '#title' => t('Search API exclude'),
+      '#collapsible' => TRUE,
+      '#collapsed' => TRUE,
+      '#group' => 'additional_settings',
+    );
+    $form['search_api_exclude']['search_api_exclude_setting'] = array(
+      '#type' => 'checkbox',
+      '#title' => t('Search API Exclude support'),
+      '#default_value' => !empty($form['#node_type']->type) && !empty($types[$form['#node_type']->type]),
+      '#description' => t('If enabled, content of this type will have an additional "Exclude from Search API" checkbox in its edit form, that allows it to be excluded from all Search API indexes.'),
+    );
+    $form['#submit'][] = 'search_api_exclude_form_node_type_form_submit';
+  }
+}
+
+/**
+ * Custom additional submit handler for node_type_form().
+ */
+function search_api_exclude_form_node_type_form_submit(array $form, array &$form_state) {
+  if (isset($form_state['values']['search_api_exclude_setting']) && !empty($form['#node_type']->type)) {
+    $type = $form['#node_type']->type;
+    $types = variable_get('search_api_exclude_types', array());
+    if (!empty($types[$type]) != (bool) $form_state['values']['search_api_exclude_setting']) {
+      if ($form_state['values']['search_api_exclude_setting']) {
+        $types[$type] = TRUE;
+      }
+      else {
+        unset($types[$type]);
+        // Remove all the nodes of this type from our "Exclude" list and mark
+        // them as changed for the Search API.
+        $select = db_select('search_api_exclude', 'e')
+          ->fields('e', array('nid'));
+        $select->join('node', 'n', 'n.nid = e.nid');
+        $nids = $select->condition('n.type', $type)
+          ->execute()
+          ->fetchCol();
+        db_delete('search_api_exclude')
+          ->condition('nid', $nids)
+          ->execute();
+        foreach (node_load_multiple($nids) as $node) {
+          search_api_entity_update($node, 'node');
+        }
+      }
+      variable_set('search_api_exclude_types', $types);
+    }
   }
 }
 
 /**
  * Implements hook_ctools_plugin_directory().
- *
- * @param string $owner
- *   The system name of the module owning the plugin type for which a base
- *   directory location is being requested.
- * @param string $plugin_type
- *   The name of the plugin type for which a base directory is being requested.
- *
- * @return string
- *   The path where CTools' plugin system should search for plugin files,
- *   relative to your module's root. Omit leading and trailing slashes.
- *
  */
 function search_api_exclude_ctools_plugin_directory($owner, $plugin_type) {
   if ($owner == 'ctools' && $plugin_type == 'content_types') {
     return 'plugins/content_types';
   }
+}
+
+/**
+ * Adds an "Exclude" entry for a specific node.
+ *
+ * @param int $nid
+ *   The node's NID.
+ */
+function search_api_exclude_add_node($nid) {
+  db_insert('search_api_exclude')
+    ->fields(array('nid' => $nid))
+    ->execute();
+}
+
+/**
+ * Determines which of the given nodes should be excluded from indexing.
+ *
+ * @param array|null $nids
+ *   (optional) The NIDs of the nodes for which to check. If NULL, all "Exclude"
+ *   entries are retrieved.
+ *
+ * @return array
+ *   The NIDs of all nodes that should be excluded from indexing.
+ */
+function search_api_exclude_get_excluded(array $nids = NULL) {
+  if ($nids === array()) {
+    return array();
+  }
+  $select = db_select('search_api_exclude', 'e')
+    ->fields('e', array('nid'));
+  if (isset($nids)) {
+    $select->condition('nid', $nids);
+  }
+  return $select->execute()->fetchCol();
+}
+
+/**
+ * Removes the "Exclude" entry for a specific node.
+ *
+ * @param int $nid
+ *   The node's NID.
+ */
+function search_api_exclude_remove_node($nid) {
+  db_delete('search_api_exclude')
+    ->condition('nid', $nid)
+    ->execute();
 }

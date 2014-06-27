@@ -1,7 +1,8 @@
 <?php
+
 /**
  * @file
- * Install, update and uninstall functions for the search_api_node_exclude.
+ * Install, update and uninstall functions for the Search API Exclude module.
  */
 
 /**
@@ -9,20 +10,41 @@
  */
 function search_api_exclude_schema() {
   $schema['search_api_exclude'] = array(
+    'description' => 'Stores the nodes which are excluded from indexing.',
     'fields' => array(
       'nid' => array(
         'type' => 'int',
+        'unsigned' => TRUE,
         'not null' => TRUE,
       ),
-      'node_exclude' => array(
-        'type' => 'int',
-        'not null' => FALSE,
-      ),
-    ),
-    'indexes' => array(
-      'node_exclude' => array('node_exclude'),
     ),
     'primary key' => array('nid'),
   );
   return $schema;
+}
+
+/**
+ * Implements hook_uninstall().
+ */
+function search_api_exclude_uninstall() {
+  variable_del('search_api_exclude_types');
+}
+
+/**
+ * Adapts the {search_api_exclude} table to only store excluded nodes.
+ */
+function search_api_exclude_update_7101() {
+  db_delete('search_api_exclude')
+    ->condition('node_exclude', 0)
+    ->execute();
+  db_drop_index('search_api_exclude', 'node_exclude');
+  db_drop_field('search_api_exclude', 'node_exclude');
+  $spec = array(
+    'type' => 'int',
+    'unsigned' => TRUE,
+    'not null' => TRUE,
+  );
+  db_change_field('search_api_exclude', 'nid', 'nid', $spec);
+
+  t('The update has been successfully executed. Please re-index content on all affected Search API indexes for the node exclusion to take effect.');
 }

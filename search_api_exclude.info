@@ -1,3 +1,5 @@
-name = Search api exclude
-description = Allows users exclude nodes to be indexed
+name = Search API Exclude
+description = Allows users to exclude certain nodes from being indexed.
 core = 7.x
+package = Search
+dependencies[] = search_api
