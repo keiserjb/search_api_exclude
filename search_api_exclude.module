@@ -68,21 +68,28 @@ function search_api_exclude_form_node_form_alter(array &$form, array &$form_stat
       '#default_value' => !empty($node->nid) ? (bool) search_api_exclude_get_excluded(array($node->nid)) : FALSE,
       '#weight' => 5,
     );
-    $form['#submit'][] = 'search_api_exclude_form_node_form_submit';
   }
 }
 
 /**
- * Custom additional submit handler for node_form().
+ * Implements hook_node_insert().
+ *
+ * @see search_api_exclude_node_update()
  */
-function search_api_exclude_form_node_form_submit(array $form, array &$form_state) {
-  if (isset($form_state['values']['search_api_exclude']) && !empty($form['#node']->nid)) {
-    if ($form_state['values']['search_api_exclude']) {
-      search_api_exclude_add_node($form['#node']->nid);
-    }
-    else {
-      search_api_exclude_remove_node($form['#node']->nid);
-    }
+function search_api_exclude_node_insert($node) {
+  // Pass-through to hook_node_update().
+  search_api_exclude_node_update($node);
+}
+
+/**
+ * Implements hook_node_update().
+ */
+function search_api_exclude_node_update($node) {
+  if (!empty($node->search_api_exclude)) {
+    search_api_exclude_add_node($node->nid);
+  }
+  else {
+    search_api_exclude_remove_node($node->nid);
   }
 }
 
