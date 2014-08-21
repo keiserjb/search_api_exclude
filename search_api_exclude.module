@@ -158,8 +158,9 @@ function search_api_exclude_ctools_plugin_directory($owner, $plugin_type) {
  *   The node's NID.
  */
 function search_api_exclude_add_node($nid) {
-  db_insert('search_api_exclude')
+  db_merge('search_api_exclude')
     ->fields(array('nid' => $nid))
+    ->condition('nid', $nid)
     ->execute();
 }
 
