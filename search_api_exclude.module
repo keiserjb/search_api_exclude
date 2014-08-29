@@ -64,7 +64,7 @@ function search_api_exclude_form_node_form_alter(array &$form, array &$form_stat
     $form['search_api_exclude']['search_api_exclude'] = array(
       '#type' => 'checkbox',
       '#title' => t('Exclude from Search API'),
-      '#description' => t('If enabled, this node will not be indexed in the Search API.'),
+      '#description' => t('Exclude this node from being indexed in Search API.'),
       '#default_value' => !empty($node->nid) ? (bool) search_api_exclude_get_excluded(array($node->nid)) : FALSE,
       '#weight' => 5,
     );
