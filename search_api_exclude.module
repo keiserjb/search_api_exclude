@@ -156,11 +156,13 @@ function search_api_exclude_form_node_type_form_submit(array $form, array &$form
         $nids = $select->condition('n.type', $type)
           ->execute()
           ->fetchCol();
-        db_delete('search_api_exclude')
-          ->condition('nid', $nids)
-          ->execute();
-        foreach (node_load_multiple($nids) as $node) {
-          search_api_entity_update($node, 'node');
+        if (isset($nids) && !empty($nids)) {
+          db_delete('search_api_exclude')
+            ->condition('nid', $nids)
+            ->execute();
+          foreach (node_load_multiple($nids) as $node) {
+            search_api_entity_update($node, 'node');
+          }
         }
       }
       variable_set('search_api_exclude_types', $types);
