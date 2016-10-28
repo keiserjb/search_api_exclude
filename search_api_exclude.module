@@ -101,9 +101,6 @@ function search_api_exclude_node_insert($node) {
  * Implements hook_node_update().
  */
 function search_api_exclude_node_update($node) {
-  if (_search_api_exclude_isDefaultRevision($node)) {
-    return;
-  }
   if (!empty($node->search_api_exclude)) {
     search_api_exclude_add_node($node->nid);
   }
@@ -224,25 +221,4 @@ function search_api_exclude_remove_node($nid) {
   db_delete('search_api_exclude')
     ->condition('nid', $nid)
     ->execute();
-}
-
-/**
- * Determines whether or not the the default revision of a node is being used.
- *
- * @see https://www.drupal.org/node/1879316#comment-6909132
- *
- * @param stdClass $node
- *   A node object.
- *
- * @return bool
- *   Whether or not this node object is the default revision.
- */
-function _search_api_exclude_isDefaultRevision($node) {
-  if (module_exists('workbench_moderation')
-    && workbench_moderation_node_type_moderated($node->type) === TRUE
-    && empty($node->workbench_moderation['updating_live_revision'])
-  ) {
-    return FALSE;
-  }
-  return TRUE;
 }
