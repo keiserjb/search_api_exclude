@@ -101,11 +101,13 @@ function search_api_exclude_node_insert($node) {
  * Implements hook_node_update().
  */
 function search_api_exclude_node_update($node) {
-  if (!empty($node->search_api_exclude)) {
-    search_api_exclude_add_node($node->nid);
-  }
-  elseif (isset($node->form_id)) {
-    search_api_exclude_remove_node($node->nid);
+  if (isset($node->search_api_exclude)) {
+    if (!empty($node->search_api_exclude)) {
+      search_api_exclude_add_node($node->nid);
+    }
+    else {
+      search_api_exclude_remove_node($node->nid);
+    }
   }
 }
 
