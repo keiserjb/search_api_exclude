@@ -3,3 +3,6 @@ description = Allows users to exclude certain nodes from being indexed.
 core = 7.x
 package = Search
 dependencies[] = search_api
+
+files[] = views/handlers/search_api_exclude_views_handler_filter_status.inc
+
