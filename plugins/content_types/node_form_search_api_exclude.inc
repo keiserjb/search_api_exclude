@@ -9,7 +9,6 @@ $plugin = array(
   'icon' => 'icon_node_form.png',
   'title' => t('Search API exclude information'),
   'description' => t('Search API exclude information on the Node form.'),
-  'required context' => new ctools_context_required(t('Form'), 'node_form'),
   'category' => t('Form'),
 );
 

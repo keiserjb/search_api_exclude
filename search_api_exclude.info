@@ -1,8 +1,8 @@
 name = Search API Exclude
 description = Allows users to exclude certain nodes from being indexed.
-core = 7.x
+backdrop = 1.x
+type = module
 package = Search
+tags[] = Search
 dependencies[] = search_api
-
-files[] = views/handlers/search_api_exclude_views_handler_filter_status.inc
 

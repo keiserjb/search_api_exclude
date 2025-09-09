@@ -24,10 +24,20 @@ function search_api_exclude_schema() {
 }
 
 /**
+ * Implements hook_install().
+ */
+function search_api_exclude_install() {
+  // Set default config
+  $config = config('search_api_exclude.settings');
+  $config->set('types', array());
+  $config->save();
+}
+
+/**
  * Implements hook_uninstall().
  */
 function search_api_exclude_uninstall() {
-  variable_del('search_api_exclude_types');
+  config_clear('search_api_exclude.settings', 'types');
 }
 
 /**
@@ -47,4 +57,15 @@ function search_api_exclude_update_7101() {
   db_change_field('search_api_exclude', 'nid', 'nid', $spec);
 
   t('The update has been successfully executed. Please re-index content on all affected Search API indexes for the node exclusion to take effect.');
+}
+
+/**
+ * Move search_api_exclude settings from variables to config.
+ */
+function search_api_exclude_update_1000() {
+  $config = config('search_api_exclude.settings');
+  $config->set('types', update_variable_get('search_api_exclude_types', array()));
+  $config->save();
+
+  update_variable_del('search_api_exclude_types');
 }

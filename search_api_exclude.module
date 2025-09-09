@@ -18,6 +18,17 @@ function search_api_exclude_permission() {
 }
 
 /**
+ * Implements hook_config_info().
+ */
+function search_api_exclude_config_info() {
+  $prefixes['search_api_exclude.settings'] = array(
+    'label' => t('Search API Exclude settings'),
+    'group' => t('Configuration'),
+  );
+  return $prefixes;
+}
+
+/**
  * Implements hook_search_api_index_items_alter().
  */
 function search_api_exclude_search_api_index_items_alter(array &$items, SearchApiIndex $index) {
@@ -66,7 +77,7 @@ function search_api_exclude_node_delete($node) {
  * Implements hook_form_BASE_FORM_ID_alter() for node_form().
  */
 function search_api_exclude_form_node_form_alter(array &$form, array &$form_state, $form_id) {
-  $types = variable_get('search_api_exclude_types', array());
+  $types = config_get('search_api_exclude.settings', 'types') ?: array();
   if (user_access('administer search_api_exclude') && !empty($types[$form['type']['#value']])) {
     $node = $form['#node'];
     $form['search_api_exclude'] = array(
@@ -116,7 +127,7 @@ function search_api_exclude_node_update($node) {
  */
 function search_api_exclude_form_node_type_form_alter(array &$form, array &$form_state) {
   if (user_access('administer search_api_exclude')) {
-    $types = variable_get('search_api_exclude_types', array());
+    $types = config_get('search_api_exclude.settings', 'types') ?: array();
     $form['search_api_exclude'] = array(
       '#type' => 'fieldset',
       '#title' => t('Search API exclude'),
@@ -140,7 +151,7 @@ function search_api_exclude_form_node_type_form_alter(array &$form, array &$form
 function search_api_exclude_form_node_type_form_submit(array $form, array &$form_state) {
   if (isset($form_state['values']['search_api_exclude_setting']) && !empty($form['#node_type']->type)) {
     $type = $form['#node_type']->type;
-    $types = variable_get('search_api_exclude_types', array());
+    $types = config_get('search_api_exclude.settings', 'types') ?: array();
     if (!empty($types[$type]) != (bool) $form_state['values']['search_api_exclude_setting']) {
       if ($form_state['values']['search_api_exclude_setting']) {
         $types[$type] = TRUE;
@@ -164,7 +175,7 @@ function search_api_exclude_form_node_type_form_submit(array $form, array &$form
           }
         }
       }
-      variable_set('search_api_exclude_types', $types);
+      config_set('search_api_exclude.settings', 'types', $types);
     }
   }
 }
@@ -172,11 +183,11 @@ function search_api_exclude_form_node_type_form_submit(array $form, array &$form
 /**
  * Implements hook_ctools_plugin_directory().
  */
-function search_api_exclude_ctools_plugin_directory($owner, $plugin_type) {
+/*function search_api_exclude_ctools_plugin_directory($owner, $plugin_type) {
   if ($owner == 'ctools' && $plugin_type == 'content_types') {
     return 'plugins/content_types';
   }
-}
+}*/
 
 /**
  * Adds an "Exclude" entry for a specific node.
@@ -276,6 +287,15 @@ function search_api_exclude_set_status_action(&$node, $context) {
 function search_api_exclude_views_api() {
   return array(
     'api' => 3.0,
-    'path' => drupal_get_path('module', 'search_api_exclude') . '/views',
+    'path' => backdrop_get_path('module', 'search_api_exclude') . '/views',
+  );
+}
+
+/**
+ * Implements hook_autoload_info().
+ */
+function search_api_exclude_autoload_info() {
+  return array(
+    'search_api_exclude_views_handler_filter_status' => 'views/handlers/search_api_exclude_views_handler_filter_status.inc',
   );
 }
