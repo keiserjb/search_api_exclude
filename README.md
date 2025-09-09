@@ -11,12 +11,12 @@ Exclude nodes from Search API results.
 
 ## Configuration and Usage
 
-* Install and configure Search API
-  - Install Search API exclude (this module)
-  - Each node type have settings for enable them to have option to not be indexed (admin/structure/types/manage/[node
+- Install and configure Search API
+- Install Search API exclude (this module)
+- Each node type have settings for enable them to have option to not be indexed (admin/structure/types/manage/[node
     type]) - field tab - Search api exclude.
-  - When the node type is enabled to could be excluded, edit a node and choose to exclude it.
-  - When you search (using search api), the node should not be in the results.
+- When the node type is enabled to could be excluded, edit a node and choose to exclude it.
+- When you search (using search api), the node should not be in the results.
 
 ## Issues
 
